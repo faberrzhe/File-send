@@ -1,0 +1,4 @@
+Server_id=1234500000
+interface=AUTO
+ident_server=NONE
+

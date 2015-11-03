@@ -1,6 +1,22 @@
 #!/usr/bin/env python3
 #-*- coding: utf-8 -*-
 import socket, threading, re, sys, os, time, random, getopt
+def keepalive(socket):
+    global server_id, ident_server
+    socket.connect(ident_server,5666)
+    socket.send(bytes('HELLO::'+server_id),'utf-8')
+
+class Server():
+    def __init__(self):
+        print('Initiating server...')
+    def run(self):
+        print('Starting server...')
+class Client():
+    def __init__(self,filename,state,ident):
+        print('Initiating client')
+    def run(self):
+        print('Starting client')
+
 class Init():
     def __init__(self):
         print('Hello!')
@@ -16,11 +32,11 @@ class Init():
         except OSError:
             answer=input('No config file. Create default(YES)?')
             if answer=='Yes' or answer=='':
-                config_file=open(config_file_name,'w')
+                config_file=open(config_file_name,'w+')
                 random.seed()
                 server_id='00000000000'+str(random.randint(1,9999999999))
                 server_id=server_id[-10:]
-                default_config='server_id='+server_id+'\r\ninterface=single\r\nident_server=none\r\nhello_interval=60\r\nclient_threads\r\nfragment_size=2000000'
+                default_config='server_id='+server_id+'\r\ninterface=single\r\nident_server=none\r\nhello_interval=60\r\nclient_threads=10\r\nfragment_size=2000000'
                 config_file.write(default_config)
             else:
                 sys.exit(1)
@@ -52,15 +68,44 @@ class Init():
                 fragment_size=variable_list[key]
                 print(fragment_size)
     def parse_sys(self):
+        server_state='server'
+        state=''
+        send_filename=''
+        ident=''
+        ip=''
         try:
-            opts=getopt.getopt(sys.argv[1:],"hsc::ci::")
+            opts,args=getopt.getopt(sys.argv[1:],"hsci:d:f:")
         except getopt.GetoptError:
-            print('Usage -s, -c <ident> <file>, -ci <ip:port> <file>')
+            print('Usage [-s|-c] [-i <ident> | -d <ip:port>] , -f <file>')
             sys.exit(1)
-        print(opts)
+        for opt,arg in opts:
+            if opt=='-s': server_state='server'
+            elif opt=='-c': server_state='client'
+            elif opt=='-f': send_filename=arg
+            elif opt=='-i':
+                state='ident'
+                ident=arg
+            elif opt=='-d':
+                state='ip'
+                ip=arg
+        if server_state=='server':
+            server=Server()
+            server.run()
+        elif server_state=='client' and state=='ident' and send_filename!='':
+            client=Client(send_filename,state,ident)
+            client.run()
+        elif server_state=='client' and state=='ip' and send_filename!='':
+            client=Client(send_filename,state,ip)
+            client.run()
+        elif state=='':
+            print('Wrong argument -i or -d requred')
+            sys.exit(1)
+        elif server_state=='client' and send_filename=='':
+            print('Filename with -f key required')
+            sys.exit(1)
 
 
 if __name__=="__main__":
-    config_file_name='config.txt'
+    config_file_name='./config.txt'
     Proggramm=Init()
     Proggramm.run()

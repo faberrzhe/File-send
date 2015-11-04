@@ -9,16 +9,6 @@ TODO:
 Protocol:
 All messages begins with uppercase flag, ending with ::
 Flags:
-	server(or client)-ident_server
-HELLO::"All active interface once in a minute sends hello to iden server or to receive server. In case to create or keepalive NAT translation
-Structure:"HELLO::ident(10digits)"
-
-GET_IDENT::"Used when need to resolve ident to ip-port pair"
-Structure:"GET_IDENT::ident(10digits)"
-
-IDENT::"Answer to GET_IDENT"
-Structure:"IDENT::ident(10digits)-ip-port,ident(10digits)-ip-port..."
-	client-server
 
 INDEX::"Client send indexfile, contains filename, client ident, part number,size,and checksum"
 Structure:"INDEX::size(bytes)::indexfile"

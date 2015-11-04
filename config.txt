@@ -1,7 +1,4 @@
-server_id=1234500000
 interface=single
-ident_server=none
-hello_interval=60
 client_threads=10
 fragment_size=2000000
-
+work_directory=C:/python_send/

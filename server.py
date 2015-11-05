@@ -4,7 +4,6 @@ class file_receive(threading.Thread):
     def __init__(self,conn):
         threading.Thread.__init__(self)
         self.conn=conn
-        print(conn)
     def run(self):
         global work_directory
         while True:
@@ -32,7 +31,7 @@ class file_receive(threading.Thread):
             return self.conn,filename
 
 def Parse_index(indexfilename):
-    global work_directory
+    global work_directory,fragmentsize,total_fragments
     with open(work_directory+indexfilename,'rb') as indexfile:
         need_fragments=[]
         filename=work_directory+str(indexfile.readline()[:-2],'utf-8')
@@ -47,7 +46,6 @@ def Parse_index(indexfilename):
             else:
                 fileread=file.read(fragmentsize)
                 file_hashsumd=hashlib.md5(fileread).hexdigest()
-                #file_hashsumd=file_hashsum.hexdigits()
                 if index_hashsumd==file_hashsumd:
                     file.close()
                 else:
@@ -55,15 +53,44 @@ def Parse_index(indexfilename):
                     os.remove(filename+'_part'+fragmentnumber)
                     need_fragments.append(fragmentnumber)
             line=str(indexfile.readline()[:-2],'utf-8')
+    total_fragments=int(fragmentnumber)+1
     need_fragments=','.join(need_fragments)
     return need_fragments
 
 class server():
     def __init__(self):
         self.run()
+    def solving_file(self,filename):
+        global work_directory,total_fragments
+        full_file=open(work_directory+filename,'w+b')
+        for i in range (total_fragments):
+            try:
+                fragment_file=open(work_directory+filename+'_part'+str(i),'rb')
+            except:
+                break
+            else:
+                data=fragment_file.read()
+                full_file.write(data)
+                fragment_file.close()
+                os.remove(work_directory+filename+'_part'+str(i))
+        full_file.close()
+        print('Received file '+filename)
+        os.remove(work_directory+filename+'.index')
     def run(self):
         global work_directory
-        work_directory='C:/Users/eberezhnoy/python/'
+        username=os.getlogin()
+        if os.name=='nt':
+            work_directory='C:/python_receive/'
+        elif username=='root':
+            work_directory='/root/python_receive/'
+        else:
+            work_directory='home/'+username+'python_receive'
+        if not os.path.exists(work_directory):
+                    try:
+                        os.makedirs(work_directory)
+                    except:
+                        print('Could not create work directory' +work_directory)
+                        sys.exit(1)
         sock=socket.socket()
         sock.bind(('',5666))
         sock.listen(50)
@@ -78,17 +105,17 @@ class server():
                 if flag == 'INDEX::':
                     th=file_receive(conn)
                     returned_connection,indexfilename=th.run()
-                    print(returned_connection,indexfilename)
+                    print('Receiving indexfile: '+indexfilename)
                     need_fragments=Parse_index(indexfilename)
-                    print(need_fragments)
-                    if need_fragments='':
+                    if need_fragments=='':
                         returned_connection.send(bytes('DONE::','utf-8'))
+                        self.solving_file(indexfilename[:-6])
                     else:
                         returned_connection.send(bytes('GET_FRAGMENTS::' + need_fragments+'::','utf-8'))
+
                 elif flag== 'FRAGMENT::':
                     th=file_receive(conn)
-                    returned_connection,indexfilename=th.run()
-                    print(returned_connection,indexfilename)
+                    returned_connection,fragment_filename=th.run()
                     returned_connection.send(bytes('ACK::','utf-8'))
                     returned_connection.close()
                 else:

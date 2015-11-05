@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 #-*- coding: utf-8 -*-
-import socket, threading, re, sys, os, hashlib, shutil, queue
+import socket, threading, re, sys, os, hashlib, shutil, queue,time
 class Init():
     def __init__(self):
-        print('Hello!')
+        self.run()
     def run(self):
         self.parse_config()
         self.parse_sys()
         self.cutfile()
+        print('Starting client..')
         Client()
     def parse_config(self):
         global config_file_name
@@ -19,7 +20,13 @@ class Init():
             answer=input('No config file. Create default(YES)?')
             if answer=='Yes' or answer=='':
                 config_file=open(config_file_name,'w+')
-                default_config='interface=single\r\nclient_threads=10\r\nfragment_size=2000000\r\nwork_directory=C:/python_send/'
+                username=os.getlogin()
+                if os.name()=='nt':
+                    default_config='interface=single\r\nclient_threads=10\r\nfragment_size=2000000\r\nwork_directory=C:/Users/'+username+'/python_send/'
+                elif username=='root':
+                    default_config='interface=single\r\nclient_threads=10\r\nfragment_size=2000000\r\nwork_directory=/root/python_send/'
+                else:
+                    default_config='interface=single\r\nclient_threads=10\r\nfragment_size=2000000\r\nwork_directory=/home/'+username+'/python_send/'
                 config_file.write(default_config)
             else:
                 sys.exit(1)
@@ -34,16 +41,13 @@ class Init():
         for key in variable_list:
             if key=='interface':
                 interface=variable_list[key]
-                print (interface)
             elif key=='work_directory':
                 work_directory=variable_list[key]
-                print (work_directory)
             elif key=='client_threads':
                 client_threads=variable_list[key]
-                print(client_threads)
+                client_threads=int(client_threads)
             elif key=='fragment_size':
                 fragment_size=variable_list[key]
-                print(fragment_size)
                 fragment_size=int(fragment_size)
     def parse_sys(self):
         global server_ip, send_filename
@@ -54,33 +58,42 @@ class Init():
     def cutfile(self):
         global send_filename,short_send_filename,fragment_size,work_directory,parts
         short_send_filename=re.findall('\S+\/(\S+)',send_filename)[0]
-        parentfile=open(send_filename,'rb')
+        try:
+            parentfile=open(send_filename,'rb')
+        except FileNotFoundError:
+            print('File not found '+send_filename)
+            sys.exit(1)
         try:
             os.makedirs(work_directory+short_send_filename)
         except FileExistsError:
-            answer=input('Directory ' + work_directory + short_send_filename + ' already exist. Overwrite?' )
-            if answer in ['YES','yes','Yes','y','Y']:
+            answer=input('Directory ' + work_directory + short_send_filename + ' already exist. Overwrite?(YES)')
+            if answer in ['YES','yes','Yes','y','Y','']:
                 shutil.rmtree(work_directory+short_send_filename,ignore_errors=True)
                 os.makedirs(work_directory+short_send_filename)
+            elif os.path.exists(work_directory+short_send_filename+'.index'):
+                return
             else:
-                print('closing')
+                print('Indexfile mising. Closing')
                 sys.exit(1)
+        else:
+            print('Creating temporary directory')
         data=parentfile.read(fragment_size)
         i=0
+        indexfile=open(work_directory+short_send_filename+'.index','w+b')
         index=short_send_filename+'\r\n'+str(fragment_size)+'\r\n'
+        indexfile.write(bytes(index,'utf-8'))
         while data:
             childfile=open(work_directory+short_send_filename+'/'+short_send_filename+'_part'+str(i),'w+b')
             childfile.write(data)
             childfile.close()
-            #q.put(i)
             fragment_hash=hashlib.md5(data)
-            index+=str(i) + ' ' + str(fragment_hash.hexdigest()) + '\r\n'
+            index=str(i) + ' ' + str(fragment_hash.hexdigest()) + '\r\n'
+            indexfile.write(bytes(index,'utf-8'))
             i+=1
             data=parentfile.read(fragment_size)
         parts=i
-        with open(work_directory+short_send_filename+'.index','w+b') as indexfile:
-            indexfile.write(bytes(index,'utf-8'))
-            indexfile.close()
+        indexfile.close()
+        print('Temporary index file created')
         parentfile.close()
 
 class fragment_send(threading.Thread):
@@ -88,11 +101,11 @@ class fragment_send(threading.Thread):
         self.run()
     def run(self):
         while True:
+            global server_ip,queue_
             try:
                 filename=queue_.get_nowait()
-            except:
+            except queue.Empty:
                 return
-            global server_ip,queue_
             new_socket=socket.socket()
             new_socket.connect((server_ip,5666))
             short_send_filename=re.findall('\S+\/(\S+)',filename)[0]
@@ -116,50 +129,69 @@ class fragment_send(threading.Thread):
 
 class Client():
     def __init__(self):
-        print('Initiating client')
         self.run()
-    def run(self):
-        print('Starting client')
-        global server_ip, work_directory, short_send_filename,queue_
-        threads=10
-        queue_=queue.Queue()
-        main_socket=socket.socket()
-        main_socket.connect((server_ip,5666))
-        main_socket.send(bytes('INDEX::','utf-8'))
+    def fragments_clean(self):
+        global work_directory, short_send_filename
+        try:
+            shutil.rmtree(work_directory+short_send_filename,ignore_errors=True)
+        except:
+            print('Could not remove temporary directory')
+        else:
+            print('Temporary directory removed')
+        try:
+            os.remove(work_directory+short_send_filename+'.index')
+        except:
+            print('Could not remove temporary index file')
+        else:
+            print('Temporary index file removed')
+    def index_sent(self,socket_):
+        global server_ip, work_directory, short_send_filename
+        socket_.connect((server_ip,5666))
+        socket_.send(bytes('INDEX::','utf-8'))
         indexfilename=work_directory+short_send_filename+'.index'
         indexfile_short_name=re.findall('\S+\/(\S+)',indexfilename)[0]
         index_file_size=str(os.path.getsize(indexfilename))
         indexfile=open(indexfilename,'rb')
-        main_socket.send(bytes(indexfile_short_name+'\r\n','utf-8'))
-        main_socket.send(bytes(index_file_size+'\r\n','utf-8'))
+        socket_.send(bytes(indexfile_short_name+'\r\n','utf-8'))
+        socket_.send(bytes(index_file_size+'\r\n','utf-8'))
         data=indexfile.read(1500)
         while data:
-            main_socket.send(data)
+            socket_.send(data)
             data=indexfile.read(1500)
         indexfile.close()
+    def run(self):
+        global server_ip, work_directory, short_send_filename,queue_,client_threads
+        queue_=queue.Queue()
+        main_socket=socket.socket()
+        self.index_sent(main_socket)
         receive=str(main_socket.recv(1),'utf-8')
         while receive[-2:]!='::' and len(receive)<50:
             receive+=str(main_socket.recv(1),'utf-8')
         if receive=='GET_FRAGMENTS::':
-            print(receive)
             receive=str(main_socket.recv(1),'utf-8')
             while receive[-2:]!='::':
                 receive+=str(main_socket.recv(1),'utf-8')
             fragmentlist=receive[:-2].split(',')
-            print(fragmentlist)
+            print('Sending fragments...')
+            main_socket.close()
             for i in fragmentlist:
                 fragment_name=work_directory+short_send_filename+'/'+short_send_filename+'_part'+str(i)
                 queue_.put(fragment_name)
             i=0
-            for i in range (0,threads):
+            for i in range (0,client_threads):
                 fragment_send()
+            while threading.active_count()>4:
+                time.sleep(1)
+            self.run()
         elif receive=='DONE::':
             print('Send sucessful!')
+            self.fragments_clean()
             main_socket.close()
         else:
             print('GET_FRAGMENTS:: expected, but received'+receive)
+            main_socket.close()
+            sys.exit(1)
 
 if __name__=="__main__":
     config_file_name='./config.txt'
     Proggramm=Init()
-    Proggramm.run()

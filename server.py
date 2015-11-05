@@ -81,10 +81,8 @@ class server():
         username=os.getlogin()
         if os.name=='nt':
             work_directory='C:/python_receive/'
-        elif username=='root':
-            work_directory='/root/python_receive/'
         else:
-            work_directory='home/'+username+'/python_receive/'
+            work_directory=os.path.join(os.path.expanduser('~'), 'python_send')
         if not os.path.exists(work_directory):
                     try:
                         os.makedirs(work_directory)

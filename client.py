@@ -93,7 +93,6 @@ class Init():
             data=parentfile.read(fragment_size)
         parts=i
         indexfile.close()
-        print('Temporary index file created')
         parentfile.close()
 
 class fragment_send(threading.Thread):

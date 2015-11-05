@@ -82,7 +82,7 @@ class server():
         if os.name=='nt':
             work_directory='C:/python_receive/'
         else:
-            work_directory=os.path.join(os.path.expanduser('~'), 'python_send')
+            work_directory=os.path.join(os.path.expanduser('~'), 'python_send/')
         if not os.path.exists(work_directory):
                     try:
                         os.makedirs(work_directory)

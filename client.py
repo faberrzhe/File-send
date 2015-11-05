@@ -145,7 +145,11 @@ class Client():
             print('Temporary index file removed')
     def index_sent(self,socket_):
         global server_ip, work_directory, short_send_filename
-        socket_.connect((server_ip,5666))
+        try:
+            socket_.connect((server_ip,5666))
+        except socket.error:
+            print ('Could not connect to server '+ server_ip)
+            sys.exit(1)
         socket_.send(bytes('INDEX::','utf-8'))
         indexfilename=work_directory+short_send_filename+'.index'
         indexfile_short_name=re.findall('\S+\/(\S+)',indexfilename)[0]
@@ -192,5 +196,5 @@ class Client():
             sys.exit(1)
 
 if __name__=="__main__":
-    config_file_name='./config.txt'
+    config_file_name=os.path.dirname(sys.argv[0])+'/config.txt'
     Proggramm=Init()

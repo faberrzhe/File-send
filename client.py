@@ -8,6 +8,7 @@ class Init():
         self.parse_config()
         self.parse_sys()
         self.cutfile()
+        Client()
     def parse_config(self):
         global config_file_name
         global interface, client_threads, fragment_size,work_directory
@@ -82,8 +83,9 @@ class Init():
             indexfile.close()
         parentfile.close()
 class Client():
-    def __init__(self,filename,state,ident):
+    def __init__(self):
         print('Initiating client')
+        self.run()
     def run(self):
         print('Starting client')
         global server_ip, work_directory, short_send_name
@@ -93,19 +95,19 @@ class Client():
         indexfilename=work_directory+short_send_name+'.index'
         index_file_size=str(os.path.getsize(indexfilename))
         indexfile=open(indexfilename,'rb')
-        main_socket.send(bytes(short_send_name+'.index','utf-8'))
-        main_socket.send(bytes(index_file_size,'utf-8'))
+        main_socket.send(bytes(short_send_name+'.index\r\n','utf-8'))
+        main_socket.send(bytes(index_file_size+'\r\n','utf-8'))
         data=indexfile.read(1500)
         while data:
             main_socket.send(data)
             data=indexfile.read(1500)
         receive=str(main_socket.recv(1))
-        while receive[-2:]!='::' or len(receive)<50
+        while receive[-2:]!='::' or len(receive)<50:
             receive+=str(main_socket.recv(1))
         if receive=='GET_FRAGMENTS::':
             receive=str(main_socket.recv(1))
-                while receive[-2:]!='::' or len(receive)<50:
-                    receive+=str(main_socket.recv(1))
+            while receive[-2:]!='::' or len(receive)<50:
+                receive+=str(main_socket.recv(1))
             fragmentlist=receive[:-2].split(',')
             print(fragmentlist)
         else:

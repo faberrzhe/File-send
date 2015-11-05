@@ -88,14 +88,14 @@ class Client():
         self.run()
     def run(self):
         print('Starting client')
-        global server_ip, work_directory, short_send_name
+        global server_ip, work_directory, short_send_filename
         main_socket=socket.socket()
         main_socket.connect((server_ip,5666))
         main_socket.send(bytes('INDEX::','utf-8'))
-        indexfilename=work_directory+short_send_name+'.index'
+        indexfilename=work_directory+short_send_filename+'.index'
         index_file_size=str(os.path.getsize(indexfilename))
         indexfile=open(indexfilename,'rb')
-        main_socket.send(bytes(short_send_name+'.index\r\n','utf-8'))
+        main_socket.send(bytes(short_send_filename+'.index\r\n','utf-8'))
         main_socket.send(bytes(index_file_size+'\r\n','utf-8'))
         data=indexfile.read(1500)
         while data:

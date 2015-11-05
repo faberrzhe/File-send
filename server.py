@@ -14,7 +14,7 @@ th=[]
 while inputs:
     r,w,e=select.select(inputs,[],[])
     for j in r:
-        conn,addr=r.accept()
+        conn,addr=j.accept()
         flag=str(conn.recv(1),'utf-8')
         while flag[-2:]!='::' or len(flag)<50:
             flag+=str(conn.recv(1),'utf-8')

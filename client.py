@@ -1,17 +1,6 @@
 #!/usr/bin/env python3
 #-*- coding: utf-8 -*-
 import socket, threading, re, sys, os, time, hashlib, shutil
-class Server():
-    def __init__(self):
-        print('Initiating server...')
-    def run(self):
-        print('Starting server...')
-class Client():
-    def __init__(self,filename,state,ident):
-        print('Initiating client')
-    def run(self):
-        print('Starting client')
-
 class Init():
     def __init__(self):
         print('Hello!')
@@ -58,7 +47,7 @@ class Init():
     def parse_sys(self):
         global server_ip, send_filename
         if len(sys.argv)<3:
-            print('Usage: ',sys.argv[0],' <seerver> <file>')
+            print('Usage: ',sys.argv[0],' <server> <file>')
         send_filename=sys.argv[2]
         server_ip=sys.argv[1]
     def cutfile(self):
@@ -68,8 +57,13 @@ class Init():
         try:
             os.makedirs(work_directory+short_send_filename)
         except FileExistsError:
-            shutil.rmtree(work_directory+short_send_filename,ignore_errors=True)
-            os.makedirs(work_directory+short_send_filename)
+            answer=input('Directory ' + work_directory + short_send_filename + ' already exist. Overwrite?' )
+            if answer in ['YES','yes','Yes','y','Y']:
+                shutil.rmtree(work_directory+short_send_filename,ignore_errors=True)
+                os.makedirs(work_directory+short_send_filename)
+            else:
+                print('closing')
+                sys.exit(1)
         data=parentfile.read(fragment_size)
         i=0
         index=short_send_filename+'\r\n'+str(fragment_size)+'\r\n'
@@ -87,6 +81,36 @@ class Init():
             indexfile.write(bytes(index,'utf-8'))
             indexfile.close()
         parentfile.close()
+class Client():
+    def __init__(self,filename,state,ident):
+        print('Initiating client')
+    def run(self):
+        print('Starting client')
+        global server_ip, work_directory, short_send_name
+        main_socket=socket.socket()
+        main_socket.connect((server_ip,5666))
+        main_socket.send(bytes('INDEX::','utf-8'))
+        indexfilename=work_directory+short_send_name+'.index'
+        index_file_size=str(os.path.getsize(indexfilename))
+        indexfile=open(indexfilename,'rb')
+        main_socket.send(bytes(short_send_name+'.index','utf-8'))
+        main_socket.send(bytes(index_file_size,'utf-8'))
+        data=indexfile.read(1500)
+        while data:
+            main_socket.send(data)
+            data=indexfile.read(1500)
+        receive=str(main_socket.recv(1))
+        while receive[-2:]!='::' or len(receive)<50
+            receive+=str(main_socket.recv(1))
+        if receive=='GET_FRAGMENTS::':
+            receive=str(main_socket.recv(1))
+                while receive[-2:]!='::' or len(receive)<50:
+                    receive+=str(main_socket.recv(1))
+            fragmentlist=receive[:-2].split(',')
+            print(fragmentlist)
+        else:
+            print('GET_FRAGMENTS:: expected, but received'+receive)
+
 if __name__=="__main__":
     config_file_name='./config.txt'
     Proggramm=Init()

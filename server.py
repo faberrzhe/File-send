@@ -21,6 +21,7 @@ while inputs:
         if flag == 'INDEX::':
             th=server(conn)
             result=th.run()
+            print(result)
             if result==0:
                 conn.send(bytes('GET_FRAGMENTS::2,4,6,8,77,888::'))
         elif flag== 'FRAGMENT':
@@ -72,7 +73,7 @@ def run(self):
         else:
             speed=str(round(speed/1024,2))+' KB/s'
         print('Received file ',filename,' in ',int(minutes),'min',int(seconds),'sec. Speed: ',speed,' from ',addr, ' in thread ',self.number)
-        self.conn.close()
+        #self.conn.close()
         return 0
 
 #if __name__=="__main__":

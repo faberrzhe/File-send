@@ -84,7 +84,7 @@ class server():
         elif username=='root':
             work_directory='/root/python_receive/'
         else:
-            work_directory='home/'+username+'python_receive'
+            work_directory='home/'+username+'/python_receive/'
         if not os.path.exists(work_directory):
                     try:
                         os.makedirs(work_directory)

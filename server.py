@@ -7,7 +7,7 @@ import threading
 import select
 threads=10
 sock=socket.socket()
-sock.bind(('',5566))
+sock.bind(('',5666))
 sock.listen(10)
 inputs=[sock]
 th=[]

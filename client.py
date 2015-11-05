@@ -106,21 +106,42 @@ class fragment_send(threading.Thread):
             except queue.Empty:
                 return
             new_socket=socket.socket()
-            new_socket.connect((server_ip,5666))
+            try:
+                new_socket.connect((server_ip,5666))
+            except socket.error:
+                queue_.put(filename)
+                return
             short_send_filename=re.findall('\S+\/(\S+)',filename)[0]
             file_size=str(os.path.getsize(filename))
             file=open(filename,'rb')
-            new_socket.send(bytes('FRAGMENT::','utf-8'))
-            new_socket.send(bytes(short_send_filename+'\r\n','utf-8'))
-            new_socket.send(bytes(file_size+'\r\n','utf-8'))
+            try:
+                new_socket.send(bytes('FRAGMENT::','utf-8'))
+            except socket.error:
+                queue_.put(filename)
+                return
+            try:
+                new_socket.send(bytes(short_send_filename+'\r\n','utf-8'))
+            except socket.error:
+                queue_.put(filename)
+                return
+            try:
+                new_socket.send(bytes(file_size+'\r\n','utf-8'))
+            except socket.error:
+                queue_.put(filename)
+                return
             data=file.read(1500)
             while data:
-                new_socket.send(data)
+                try:
+                    new_socket.send(data)
+                except socket.error:
+                    queue_.put(filename)
+                    return
                 data=file.read(1500)
             try:
                 receive=str(new_socket.recv(5),'utf-8')
-            except socket.timeout:
+            except socket.error:
                 queue_.put(filename)
+                return
             if receive!='ACK::':
                 queue_.put(filename)
             file.close()
@@ -168,6 +189,7 @@ class Client():
         main_socket=socket.socket()
         self.index_sent(main_socket)
         receive=str(main_socket.recv(1),'utf-8')
+        if not receive: sys.exit(1)
         while receive[-2:]!='::' and len(receive)<50:
             receive+=str(main_socket.recv(1),'utf-8')
         if receive=='GET_FRAGMENTS::':

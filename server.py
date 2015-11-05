@@ -7,23 +7,41 @@ class file_receive(threading.Thread):
     def run(self):
         global work_directory
         while True:
-            data=str(self.conn.recv(1),'utf-8')
+            try:
+                data=str(self.conn.recv(1),'utf-8')
+            except socket.error:
+                    break
             while data[-2:]!='\r\n':
-                data+=str(self.conn.recv(1),'utf-8')
+                try:
+                    data+=str(self.conn.recv(1),'utf-8')
+                except socket.error:
+                    break
             filename = data[:-2]
-            data=str(self.conn.recv(1),'utf-8')
+            try:
+                data=str(self.conn.recv(1),'utf-8')
+            except socket.error:
+                    break
             while data[-2:]!='\r\n':
-                data+=str(self.conn.recv(1),'utf-8')
+                try:
+                    data+=str(self.conn.recv(1),'utf-8')
+                except socket.error:
+                    break
             filesize = int(data[:-2])
             file = open(work_directory+filename, 'wb')
             while filesize>0:
                 if filesize>4096:
-                    data = self.conn.recv(4096)
+                    try:
+                        data = self.conn.recv(4096)
+                    except socket.error:
+                        break
                     datasize=len(data)
                     filesize=filesize-datasize
                     file.write(data)
                 else:
-                    data = self.conn.recv(filesize)
+                    try:
+                        data = self.conn.recv(filesize)
+                    except socket.error:
+                        break
                     datasize=len(data)
                     filesize=filesize-datasize
                     file.write(data)
@@ -74,7 +92,7 @@ class server():
                 fragment_file.close()
                 os.remove(work_directory+filename+'_part'+str(i))
         full_file.close()
-        print('Received file '+filename)
+        print('Received file '+filename +' To directory: '+work_directory)
         os.remove(work_directory+filename+'.index')
     def run(self):
         global work_directory
@@ -82,7 +100,7 @@ class server():
         if os.name=='nt':
             work_directory='C:/python_receive/'
         else:
-            work_directory=os.path.join(os.path.expanduser('~'), 'python_send/')
+            work_directory=os.path.join(os.path.expanduser('~'), 'python_receive/')
         if not os.path.exists(work_directory):
                     try:
                         os.makedirs(work_directory)
@@ -97,24 +115,39 @@ class server():
             r,w,e=select.select(inputs,[],[])
             for current_socket in r:
                 conn,addr=current_socket.accept()
-                flag=str(conn.recv(1),'utf-8')
+                try:
+                    flag=str(conn.recv(1),'utf-8')
+                except socket.error:
+                    break
                 while flag[-2:]!='::' and len(flag)<50:
-                    flag+=str(conn.recv(1),'utf-8')
+                    try:
+                        flag+=str(conn.recv(1),'utf-8')
+                    except socket.error:
+                        break
                 if flag == 'INDEX::':
                     th=file_receive(conn)
                     returned_connection,indexfilename=th.run()
                     print('Receiving indexfile: '+indexfilename)
                     need_fragments=Parse_index(indexfilename)
                     if need_fragments=='':
-                        returned_connection.send(bytes('DONE::','utf-8'))
+                        try:
+                            returned_connection.send(bytes('DONE::','utf-8'))
+                        except socket.error:
+                            break
                         self.solving_file(indexfilename[:-6])
                     else:
-                        returned_connection.send(bytes('GET_FRAGMENTS::' + need_fragments+'::','utf-8'))
+                        try:
+                            returned_connection.send(bytes('GET_FRAGMENTS::' + need_fragments+'::','utf-8'))
+                        except socket.error:
+                            break
 
                 elif flag== 'FRAGMENT::':
                     th=file_receive(conn)
                     returned_connection,fragment_filename=th.run()
-                    returned_connection.send(bytes('ACK::','utf-8'))
+                    try:
+                        returned_connection.send(bytes('ACK::','utf-8'))
+                    except socket.error:
+                        break
                     returned_connection.close()
                 else:
                     print('Error')

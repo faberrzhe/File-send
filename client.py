@@ -5,9 +5,11 @@ class Init():
     def __init__(self):
         self.run()
     def run(self):
+        global start_time
         self.parse_config()
         self.parse_sys()
         self.cutfile()
+        start_time=time.time()
         print('Starting client..')
         Client()
     def parse_config(self):
@@ -54,15 +56,18 @@ class Init():
         if len(sys.argv)<3:
             print('Usage: ',sys.argv[0],' <server> <file>')
         send_filename=sys.argv[2]
+        if send_filename[0]=='"' and send_filename[-1]=='"':
+            send_filename=send_filename[1:-1]
         server_ip=sys.argv[1]
     def cutfile(self):
-        global send_filename,short_send_filename,fragment_size,work_directory,parts
-        short_send_filename=re.findall('\S+\/(\S+)',send_filename)[0]
+        global send_filename,short_send_filename,fragment_size,work_directory,parts,start_file_size
+        short_send_filename=re.findall('.+\/(.+)',send_filename)[0]
         try:
             parentfile=open(send_filename,'rb')
         except FileNotFoundError:
             print('File not found '+send_filename)
             sys.exit(1)
+        start_file_size=os.path.getsize(send_filename)
         try:
             os.makedirs(work_directory+short_send_filename)
         except FileExistsError:
@@ -111,7 +116,7 @@ class fragment_send(threading.Thread):
             except socket.error:
                 queue_.put(filename)
                 return
-            short_send_filename=re.findall('\S+\/(\S+)',filename)[0]
+            short_send_filename=re.findall('.+\/(.+)',filename)[0]
             file_size=str(os.path.getsize(filename))
             file=open(filename,'rb')
             try:
@@ -173,7 +178,7 @@ class Client():
             sys.exit(1)
         socket_.send(bytes('INDEX::','utf-8'))
         indexfilename=work_directory+short_send_filename+'.index'
-        indexfile_short_name=re.findall('\S+\/(\S+)',indexfilename)[0]
+        indexfile_short_name=re.findall('.+\/(.+)',indexfilename)[0]
         index_file_size=str(os.path.getsize(indexfilename))
         indexfile=open(indexfilename,'rb')
         socket_.send(bytes(indexfile_short_name+'\r\n','utf-8'))
@@ -184,7 +189,7 @@ class Client():
             data=indexfile.read(1500)
         indexfile.close()
     def run(self):
-        global server_ip, work_directory, short_send_filename,queue_,client_threads
+        global server_ip, work_directory, short_send_filename,queue_,client_threads,start_time,start_file_size
         queue_=queue.Queue()
         main_socket=socket.socket()
         self.index_sent(main_socket)
@@ -210,8 +215,29 @@ class Client():
             self.run()
         elif receive=='DONE::':
             print('Send sucessful!')
+            end_time=time.time()
+            durance=end_time-start_time
+            minutes,seconds=divmod(durance,60)
+            if durance!=0:
+                speed=start_file_size/durance
+            else:
+                speed=0
+            if speed>500000:
+                speed=str(round(speed/1048576,2))+' MB/s'
+            else:
+                speed=str(round(speed/1024,2))+' KB/s'
+            if start_file_size>1000000000:
+                start_file_size=str(round(start_file_size/1073741824 , 2))+'Gb'
+            elif start_file_size>1000000:
+                start_file_size=str(round(start_file_size/1048576 , 2))+'Mb'
+            elif start_file_size>1000:
+                start_file_size=str(round(start_file_size/1024 , 2))+'Kb'
+            else:
+                start_file_size=str(start_file_size)+'bytes'
+            print('Send '+short_send_filename+' ('+start_file_size+') in '+str(minutes)+'min'+str(seconds)+'sec ('+speed+') to '+server_ip )
             self.fragments_clean()
             main_socket.close()
+            sys.exit(0)
         else:
             print('GET_FRAGMENTS:: expected, but received'+receive)
             main_socket.close()

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import socket, threading, re, sys, os, time, select, hashlib
+import socket, threading, sys, os, select, hashlib
 class file_receive(threading.Thread):
     def __init__(self,conn):
         threading.Thread.__init__(self)

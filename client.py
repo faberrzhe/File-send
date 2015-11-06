@@ -103,7 +103,7 @@ class fragment_send(threading.Thread):
     def __init__(self,interface):
         self.interface=interface
         print(self.interface)
-        #self.run()
+        self.run()
     def run(self):
         while True:
             global server_ip,queue_
@@ -159,13 +159,48 @@ class Client():
     def __init__(self):
         self.run()
     def load_balance(self):
-        global interface, client_threads,server_ip
+        global interface, client_threads,server_ip,work_directory
         server_ip_numeric=socket.gethostbyname(server_ip)
         if interface=='single':
             for i in range(client_threads):
                 fragment_send('')
         elif interface=='auto':
-            return
+            client_ip=[]
+            nexthop_ip=[]
+            if os.name='nt':
+                subprocess.call(["route", "print", "-4", "0*", ">>",work_directory "route"],shell=True)
+            else:
+                subprocess.call("netstat -rn | grep 0.0.0.0 >>"+work_directory+"route",shell=True)
+            route_file=open(work_directory+'route',rb)
+            line_=route_file.readline()
+            while line_:
+                if os.name='nt':
+                    try:
+                        re_string=re.findall('\s+0\.0\.0\.0\s+0\.0\.0\.0\s+(...\....\....\....).+')[0]
+                    except:
+                        pass
+                    else:
+                        nexthop_ip.append(re_string)
+                    try:
+                        re_string=re.findall('\s+0\.0\.0\.0\s+0\.0\.0\.0\s+...\....\....\....\s+(...\....\....\....).+')[0]
+                    except:
+                        pass
+                    else:
+                        client_ip.append(re_string)
+                else:
+                    try:
+                        re_string=re.findall('\s+0\.0\.0\.0\s+0\.0\.0\.0\s+(...\....\....\....).+')[0]
+                        ip a show dev eth0 | grep inet | head -n 1 | cut -d ' ' -f 6 | cut -f 1 -d '/'
+                    except:
+                        pass
+                    else:
+                        nexthop_ip.append(re_string)
+                    try:
+                        re_string=re.findall('\s+0\.0\.0\.0\s+0\.0\.0\.0\s+...\....\....\....\s+(...\....\....\....).+')[0]
+                    except:
+                        pass
+                    else:
+                        client_ip.append(re_string)
         else:
             client_ip=[]
             nexthop_ip=[]
@@ -265,7 +300,6 @@ class Client():
             for i in fragmentlist:
                 fragment_name=work_directory+short_send_filename+'/'+short_send_filename+'_part'+str(i)
                 queue_.put(fragment_name)
-            i=0
             self.load_balance()
             while threading.active_count()>4:
                 time.sleep(1)

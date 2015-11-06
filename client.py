@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #-*- coding: utf-8 -*-
-import socket, threading, re, sys, os, hashlib, shutil, queue,time
+import socket, threading, re, sys, os, hashlib, shutil, queue,time,subprocess
 class Init():
     def __init__(self):
         self.run()
@@ -24,11 +24,11 @@ class Init():
                 config_file=open(config_file_name,'w+')
                 username=os.getlogin()
                 if os.name()=='nt':
-                    default_config='interface=single\r\nclient_threads=10\r\nfragment_size=2000000\r\nwork_directory=C:/Users/'+username+'/python_send/'
+                    default_config='#Interface options \'single\' for one interface \'auto\' for choosing all interfaces that have default route.  In mode auto weight is equal\r\n#If you want to sent manual interface format is \'interface=<interface ip> <nexthop ip> <weight>;<interface ip2> <nexthop ip2> <weight2>\'\r\ninterface=single\r\n#Number of sending threads using in single interface connection\r\nclient_threads=10\r\n#Size of one fragment in bytes\r\nfragment_size=2000000\r\n#Temporary directory to store fragments\r\nwork_directory=C:/Users/'+username+'/python_send/'
                 elif username=='root':
-                    default_config='interface=single\r\nclient_threads=10\r\nfragment_size=2000000\r\nwork_directory=/root/python_send/'
+                    default_config='#Interface options \'single\' for one interface \'auto\' for choosing all interfaces that have default route.  In mode auto weight is equal\r\n#If you want to sent manual interface format is \'interface=<interface ip> <nexthop ip> <weight>;<interface ip2> <nexthop ip2> <weight2>\'\r\ninterface=single\r\n#Number of sending threads using in single interface connection\r\nclient_threads=10\r\n#Size of one fragment in bytes\r\nfragment_size=2000000\r\n#Temporary directory to store fragments\r\nwork_directory=/root/python_send/'
                 else:
-                    default_config='interface=single\r\nclient_threads=10\r\nfragment_size=2000000\r\nwork_directory=/home/'+username+'/python_send/'
+                    default_config='#Interface options \'single\' for one interface \'auto\' for choosing all interfaces that have default route.  In mode auto weight is equal\r\n#If you want to sent manual interface format is \'interface=<interface ip> <nexthop ip> <weight>;<interface ip2> <nexthop ip2> <weight2>\'\r\ninterface=single\r\n#Number of sending threads using in single interface connection\r\nclient_threads=10\r\n#Size of one fragment in bytes\r\nfragment_size=2000000\r\n#Temporary directory to store fragments\r\nwork_directory=/home/'+username+'/python_send/'
                 config_file.write(default_config)
             else:
                 sys.exit(1)
@@ -38,7 +38,7 @@ class Init():
             except IndexError:
                 pass
             else:
-                variable_value=re.findall('=(\S+)',line_)[0]
+                variable_value=re.findall('=(.+)',line_)[0]
                 variable_list[variable_name]=variable_value
         for key in variable_list:
             if key=='interface':
@@ -101,7 +101,9 @@ class Init():
         parentfile.close()
 
 class fragment_send(threading.Thread):
-    def __init__(self):
+    def __init__(self,interface):
+        self.interface=interface
+        print(self.interface)
         self.run()
     def run(self):
         while True:
@@ -157,6 +159,55 @@ class fragment_send(threading.Thread):
 class Client():
     def __init__(self):
         self.run()
+    def load_balance(self):
+        global interface, client_threads,server_ip
+        server_ip_numeric=socket.gethostbyname(server_ip)
+        if interface=='single':
+            for i in range(client_threads):
+                cc
+        elif interface=='auto':
+            return
+        else:
+            client_ip=[]
+            nexthop_ip=[]
+            metric_list=[]
+            interface=interface.split(';')
+            for line in interface:
+                client_ip.append(line.split(' ')[0])
+                nexthop_ip.append(line.split(' ')[1])
+                metric_list.append(line.split(' ')[2])
+            if os.name=='nt':
+                subprocess.call(["route", "delete", server_ip_numeric],shell=True)
+            else:
+                route_call=subprocess.call(["route del -host", server_ip_numeric],shell=True)
+                while route_call==0:
+                    route_call=subprocess.call(["route del -host", server_ip_numeric],shell=True)
+            for nexthop in nexthop_ip:
+                if os.name=='nt':
+                    route_call=subprocess.call(["route", "add", server_ip_numeric, "mask", "255.255.255.255",nexthop],shell=True)
+                    if route_call!=0:
+                        print('Could not set routing. Try to run program from privelege user')
+                        sys.exit(1)
+                else:
+                    route_call=subprocess.call(["route add -host"+server_ip_numeric+"gw"+nexthop],shell=True)
+                    if route_call!=0:
+                        print ('Could not set routing. Try to run program from privelege user')
+                        sys.exit(1)
+            sum=0
+            for metric in metric_list:
+                sum+=int(metric)
+            if (client_threads/sum)<0.5:
+                for i in range(len(metric_list)):
+                    for k in range(metric_list[i]):
+                        fragment_send(client_ip[i])
+            else:
+                delimiter=client_threads//sum
+                for j in range(delimiter):
+                    for i in range(len(metric_list)):
+                        for k in range(metric_list[i]):
+                            fragment_send(client_ip[i])
+
+
     def fragments_clean(self):
         global work_directory, short_send_filename
         try:
@@ -216,8 +267,7 @@ class Client():
                 fragment_name=work_directory+short_send_filename+'/'+short_send_filename+'_part'+str(i)
                 queue_.put(fragment_name)
             i=0
-            for i in range (0,client_threads):
-                fragment_send()
+            self.load_balance()
             while threading.active_count()>4:
                 time.sleep(1)
             self.run()

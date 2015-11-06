@@ -103,7 +103,7 @@ class fragment_send(threading.Thread):
     def __init__(self,interface):
         self.interface=interface
         print(self.interface)
-        self.run()
+        #self.run()
     def run(self):
         while True:
             global server_ip,queue_
@@ -167,40 +167,66 @@ class Client():
         elif interface=='auto':
             client_ip=[]
             nexthop_ip=[]
-            if os.name='nt':
-                subprocess.call(["route", "print", "-4", "0*", ">>",work_directory "route"],shell=True)
+            if os.name=='nt':
+                subprocess.call(["route", "print", "-4", "0*", ">",work_directory+"route"],shell=True)
             else:
-                subprocess.call("netstat -rn | grep 0.0.0.0 >>"+work_directory+"route",shell=True)
-            route_file=open(work_directory+'route',rb)
+                subprocess.call("netstat -rn | grep ^0.0.0.0 >"+work_directory+"route",shell=True)
+            route_file=open(work_directory+'route','rb')
             line_=route_file.readline()
             while line_:
-                if os.name='nt':
+                if os.name=='nt':
+                    line_=str(line_,'cp866')
                     try:
-                        re_string=re.findall('\s+0\.0\.0\.0\s+0\.0\.0\.0\s+(...\....\....\....).+')[0]
+                        re_string=re.findall('\s+0\.0\.0\.0\s+0\.0\.0\.0\s+(\S+\.\S+\.\S+\.\S+)\s+.+',line_)[0]
                     except:
                         pass
                     else:
                         nexthop_ip.append(re_string)
                     try:
-                        re_string=re.findall('\s+0\.0\.0\.0\s+0\.0\.0\.0\s+...\....\....\....\s+(...\....\....\....).+')[0]
+                        re_string=re.findall('\s+0\.0\.0\.0\s+0\.0\.0\.0\s+\S+\.\S+\.\S+\.\S+\s+(\S+\.\S+\.\S+\.\S+)\s+.+',line_)[0]
                     except:
                         pass
                     else:
                         client_ip.append(re_string)
                 else:
+                    line_=str(line_,'utf-8')
                     try:
-                        re_string=re.findall('\s+0\.0\.0\.0\s+0\.0\.0\.0\s+(...\....\....\....).+')[0]
-                        ip a show dev eth0 | grep inet | head -n 1 | cut -d ' ' -f 6 | cut -f 1 -d '/'
+                        re_string=re.findall('0\.0\.0\.0\s+(\S+\.\S+\.\S+\.\S+)\s+.+',line_)[0]
                     except:
                         pass
                     else:
                         nexthop_ip.append(re_string)
                     try:
-                        re_string=re.findall('\s+0\.0\.0\.0\s+0\.0\.0\.0\s+...\....\....\....\s+(...\....\....\....).+')[0]
+                        re_string=re.findall('\s+0\.0\.0\.0\.+(\S+)',line_)[0]
                     except:
                         pass
                     else:
+                        re_string=subprocess.check_output(["ip a show dev "+re_string+" | grep inet | head -n 1 | cut -d ' ' -f 6 | cut -f 1 -d '/'"],shell=True)
                         client_ip.append(re_string)
+                line_=route_file.readline()
+            route_file.close()
+            if os.name=='nt':
+                subprocess.call(["route", "delete", server_ip_numeric],shell=True)
+            else:
+                route_call=subprocess.call(["route del -host", server_ip_numeric],shell=True)
+                while route_call==0:
+                    route_call=subprocess.call(["route del -host", server_ip_numeric],shell=True)
+            for nexthop in nexthop_ip:
+                if os.name=='nt':
+                    route_call=subprocess.call(["route", "add", server_ip_numeric, "mask", "255.255.255.255",nexthop],shell=True)
+                    if route_call!=0:
+                        print('Could not set routing. Try to run program from privelege user')
+                        sys.exit(1)
+                else:
+                    route_call=subprocess.call(["route add -host"+server_ip_numeric+"gw"+nexthop],shell=True)
+                    if route_call!=0:
+                        print ('Could not set routing. Try to run program from privelege user')
+                        sys.exit(1)
+            delimiter=client_threads//len(client_ip)
+            for i in range(delimiter):
+                for j in range(len(client_ip)):
+                    fragment_send(client_ip[j])
+
         else:
             client_ip=[]
             nexthop_ip=[]

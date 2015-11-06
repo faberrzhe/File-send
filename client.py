@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-#-*- coding: utf-8 -*-
 import socket, threading, re, sys, os, hashlib, shutil, queue,time,subprocess
 class Init():
     def __init__(self):
@@ -104,7 +103,7 @@ class fragment_send(threading.Thread):
     def __init__(self,interface):
         self.interface=interface
         print(self.interface)
-        self.run()
+        #self.run()
     def run(self):
         while True:
             global server_ip,queue_

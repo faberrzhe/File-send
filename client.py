@@ -111,6 +111,8 @@ class fragment_send(threading.Thread):
             except queue.Empty:
                 return
             new_socket=socket.socket()
+            new_socket.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+            new_socket.setsockopt(socket.SOL_SOCKET,socket.SO_KEEPALIVE,1)
             try:
                 new_socket.connect((server_ip,5666))
             except socket.error:
@@ -192,8 +194,14 @@ class Client():
         global server_ip, work_directory, short_send_filename,queue_,client_threads,start_time,start_file_size
         queue_=queue.Queue()
         main_socket=socket.socket()
+        main_socket.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+        main_socket.setsockopt(socket.SOL_SOCKET,socket.SO_KEEPALIVE,1)
         self.index_sent(main_socket)
-        receive=str(main_socket.recv(1),'utf-8')
+        try:
+            receive=str(main_socket.recv(1),'utf-8')
+        except socket.timeout:
+            print('Could not connect to server')
+            sys.exit(1)
         if not receive: sys.exit(1)
         while receive[-2:]!='::' and len(receive)<50:
             receive+=str(main_socket.recv(1),'utf-8')

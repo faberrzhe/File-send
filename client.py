@@ -164,7 +164,7 @@ class Client():
         server_ip_numeric=socket.gethostbyname(server_ip)
         if interface=='single':
             for i in range(client_threads):
-                cc
+                fragment_send('')
         elif interface=='auto':
             return
         else:
@@ -198,13 +198,13 @@ class Client():
                 sum+=int(metric)
             if (client_threads/sum)<0.5:
                 for i in range(len(metric_list)):
-                    for k in range(metric_list[i]):
+                    for k in range(int(metric_list[i])):
                         fragment_send(client_ip[i])
             else:
                 delimiter=client_threads//sum
                 for j in range(delimiter):
                     for i in range(len(metric_list)):
-                        for k in range(metric_list[i]):
+                        for k in range(int(metric_list[i])):
                             fragment_send(client_ip[i])
 
 

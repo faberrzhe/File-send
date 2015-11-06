@@ -1,7 +1,7 @@
 #Interface options 'single' for one interface 'auto' for choosing all interfaces that have default route. In mode auto weight is equal
 #If you want to sent manual interface format is 'interface=<interface ip> <nexthop ip> <weight>;<interface ip2> <nexthop ip2> <weight2>'
 #interface=192.168.0.1 192.168.0.2 5;192.168.1.1 192.168.0.3 6;192.168.3.3 192.168.0.4 8
-interface=auto
+interface=single
 #Number of sending threads using in single interface connection
 client_threads=10
 #Size of one fragment in bytes

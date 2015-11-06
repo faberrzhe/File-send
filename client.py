@@ -103,7 +103,7 @@ class fragment_send(threading.Thread):
     def __init__(self,interface):
         self.interface=interface
         print(self.interface)
-        #self.run()
+        self.run()
     def run(self):
         while True:
             global server_ip,queue_

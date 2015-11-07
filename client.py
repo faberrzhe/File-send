@@ -103,7 +103,7 @@ class fragment_send(threading.Thread):
     def __init__(self,interface):
         self.interface=interface
         print(self.interface)
-        self.run()
+        #self.run()
     def run(self):
         while True:
             global server_ip,queue_
@@ -197,20 +197,20 @@ class Client():
                     else:
                         nexthop_ip.append(re_string)
                     try:
-                        re_string=re.findall('\s+0\.0\.0\.0\.+(\S+)',line_)[0]
+                        re_string=re.findall('\s+0\.0\.0\.0.+\s+(\S+)',line_)[0]
                     except:
                         pass
                     else:
                         re_string=subprocess.check_output(["ip a show dev "+re_string+" | grep inet | head -n 1 | cut -d ' ' -f 6 | cut -f 1 -d '/'"],shell=True)
-                        client_ip.append(re_string)
+                        client_ip.append(str(re_string,'utf-8')[:-1])
                 line_=route_file.readline()
             route_file.close()
             if os.name=='nt':
                 subprocess.call(["route", "delete", server_ip_numeric],shell=True)
             else:
-                route_call=subprocess.call(["route del -host", server_ip_numeric],shell=True)
+                route_call=subprocess.call(["route del -host "+server_ip_numeric],shell=True)
                 while route_call==0:
-                    route_call=subprocess.call(["route del -host", server_ip_numeric],shell=True)
+                    route_call=subprocess.call(["route del -host "+server_ip_numeric],shell=True)
             for nexthop in nexthop_ip:
                 if os.name=='nt':
                     route_call=subprocess.call(["route", "add", server_ip_numeric, "mask", "255.255.255.255",nexthop],shell=True)
@@ -218,7 +218,7 @@ class Client():
                         print('Could not set routing. Try to run program from privelege user')
                         sys.exit(1)
                 else:
-                    route_call=subprocess.call(["route add -host"+server_ip_numeric+"gw"+nexthop],shell=True)
+                    route_call=subprocess.call(["route add -host "+server_ip_numeric+" gw "+nexthop],shell=True)
                     if route_call!=0:
                         print ('Could not set routing. Try to run program from privelege user')
                         sys.exit(1)

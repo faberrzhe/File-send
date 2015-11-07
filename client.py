@@ -112,11 +112,11 @@ class fragment_send(threading.Thread):
                 filename=queue_.get_nowait()
             except queue.Empty:
                 return
-            new_socket=socket.socket()
-            new_socket.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-            new_socket.setsockopt(socket.SOL_SOCKET,socket.SO_KEEPALIVE,1)
             try:
-                new_socket.connect((server_ip,5666))
+                new_socket=socket.create_connection((server_ip,5666),60,(self.interface,0))
+                new_socket.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+                new_socket.setsockopt(socket.SOL_SOCKET,socket.SO_KEEPALIVE,1)
+
             except socket.error:
                 queue_.put(filename)
                 return
@@ -355,6 +355,7 @@ class Client():
             print('Send '+short_send_filename+' ('+start_file_size+') in '+str(minutes)+'min'+str(seconds)+'sec ('+speed+') to '+server_ip )
             self.fragments_clean()
             main_socket.close()
+            server_ip_numeric=socket.gethostbyname(server_ip)
             if os.name=='nt':
                 subprocess.call(["route", "delete", server_ip_numeric],shell=True)
             else:

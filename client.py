@@ -32,6 +32,7 @@ class Init():
             else:
                 sys.exit(1)
         for line_ in config_file:
+            if line_[0]=='#': continue
             try:
                 variable_name=re.findall('(?!#)(\S+)=\S+',line_)[0]
             except IndexError:
@@ -103,7 +104,7 @@ class fragment_send(threading.Thread):
     def __init__(self,interface):
         self.interface=interface
         print(self.interface)
-        #self.run()
+        self.run()
     def run(self):
         while True:
             global server_ip,queue_
@@ -249,14 +250,14 @@ class Client():
                         print('Could not set routing. Try to run program from privelege user')
                         sys.exit(1)
                 else:
-                    route_call=subprocess.call(["route add -host"+server_ip_numeric+"gw"+nexthop],shell=True)
+                    route_call=subprocess.call(["route add -host "+server_ip_numeric+" gw "+nexthop],shell=True)
                     if route_call!=0:
                         print ('Could not set routing. Try to run program from privelege user')
                         sys.exit(1)
             sum=0
             for metric in metric_list:
                 sum+=int(metric)
-            if (client_threads/sum)<0.5:
+            if (client_threads/sum)<0.6:
                 for i in range(len(metric_list)):
                     for k in range(int(metric_list[i])):
                         fragment_send(client_ip[i])
@@ -354,6 +355,12 @@ class Client():
             print('Send '+short_send_filename+' ('+start_file_size+') in '+str(minutes)+'min'+str(seconds)+'sec ('+speed+') to '+server_ip )
             self.fragments_clean()
             main_socket.close()
+            if os.name=='nt':
+                subprocess.call(["route", "delete", server_ip_numeric],shell=True)
+            else:
+                route_call=subprocess.call(["route del -host", server_ip_numeric],shell=True)
+                while route_call==0:
+                    route_call=subprocess.call(["route del -host", server_ip_numeric],shell=True)
             sys.exit(0)
         else:
             print('GET_FRAGMENTS:: expected, but received'+receive)

@@ -103,8 +103,9 @@ class Init():
 class fragment_send(threading.Thread):
     def __init__(self,interface):
         self.interface=interface
+        threading.Thread.__init__(self)
         print(self.interface)
-        self.run()
+        #self.run()
     def run(self):
         while True:
             global server_ip,queue_
@@ -164,7 +165,8 @@ class Client():
         server_ip_numeric=socket.gethostbyname(server_ip)
         if interface=='single':
             for i in range(client_threads):
-                fragment_send('')
+                thread=fragment_send('')
+                thread.start()
         elif interface=='auto':
             client_ip=[]
             nexthop_ip=[]
@@ -226,7 +228,8 @@ class Client():
             delimiter=client_threads//len(client_ip)
             for i in range(delimiter):
                 for j in range(len(client_ip)):
-                    fragment_send(client_ip[j])
+                    thread=fragment_send(client_ip[j])
+                    thread.start()
 
         else:
             client_ip=[]
@@ -266,7 +269,8 @@ class Client():
                 for j in range(delimiter):
                     for i in range(len(metric_list)):
                         for k in range(int(metric_list[i])):
-                            fragment_send(client_ip[i])
+                            thread=fragment_send(client_ip[i])
+                            thread.start()
 
 
     def fragments_clean(self):

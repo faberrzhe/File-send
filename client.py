@@ -359,9 +359,9 @@ class Client():
             if os.name=='nt':
                 subprocess.call(["route", "delete", server_ip_numeric],shell=True)
             else:
-                route_call=subprocess.call(["route del -host", server_ip_numeric],shell=True)
+                route_call=subprocess.call(["route del -host "+ server_ip_numeric],shell=True)
                 while route_call==0:
-                    route_call=subprocess.call(["route del -host", server_ip_numeric],shell=True)
+                    route_call=subprocess.call(["route del -host "+ server_ip_numeric],shell=True)
             sys.exit(0)
         else:
             print('GET_FRAGMENTS:: expected, but received'+receive)

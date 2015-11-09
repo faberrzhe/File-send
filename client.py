@@ -55,6 +55,7 @@ class Init():
                 interface=variable_list[key]
             elif key=='work_directory':
                 work_directory=variable_list[key]
+                work_directory=work_directory.replace('\\','/')
             elif key=='client_threads':
                 client_threads=variable_list[key]
                 client_threads=int(client_threads)
@@ -66,6 +67,7 @@ class Init():
         if len(sys.argv)<3:
             print('Usage: ',sys.argv[0],' <server> <file>')
         send_filename=sys.argv[2]
+        send_filename=send_filename.replace('\\','/')
         if send_filename[0]=='"' and send_filename[-1]=='"':
             send_filename=send_filename[1:-1]
         server_ip=sys.argv[1]
@@ -83,7 +85,11 @@ class Init():
         except FileExistsError:
             answer=input('Directory ' + work_directory + short_send_filename + ' already exist. Overwrite?(YES)')
             if answer in ['YES','yes','Yes','y','Y','']:
-                shutil.rmtree(work_directory+short_send_filename,ignore_errors=True)
+                try:
+                    shutil.rmtree(work_directory+short_send_filename,ignore_errors=False)
+                except PermissionError:
+                    print('Permision Error. Couldn\'t delete directory '+work_directory+short_send_filename+' closing')
+                    sys.exit(1)
                 os.makedirs(work_directory+short_send_filename)
             elif os.path.exists(work_directory+short_send_filename+'.index'):
                 return

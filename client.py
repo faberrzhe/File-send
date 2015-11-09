@@ -222,12 +222,18 @@ class Client():
                 subprocess.call(["route", "delete", server_ip_numeric],shell=True)
             else:
                 for client in client_ip:
-                    subprocess.call(["ip rule del from "+client],shell=True)
-                tables=subprocess.check_output(["ip route show table all | grep ^default | grep 566"],shell=True)
-                tables=str(tables,'utf-8')
-                tables.split('\r\n')
-                for table_line in tables:
-                    subprocess.call(["ip route del "+table_line])
+                    try:
+                        subprocess.call(["ip rule del from "+client],shell=True)
+                    except:
+                        pass
+                try:
+                    tables=subprocess.check_output(["ip route show table all | grep ^default | grep 566"],shell=True)
+                    tables=str(tables,'utf-8')
+                    tables.split('\r\n')
+                    for table_line in tables:
+                        subprocess.call(["ip route del "+table_line])
+                except:
+                    pass
             i=0
             for nexthop in nexthop_ip:
                 if os.name=='nt':

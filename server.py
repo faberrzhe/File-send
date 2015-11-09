@@ -6,51 +6,52 @@ class file_receive(threading.Thread):
         self.conn=conn
     def run(self):
         global work_directory
-        while True:
+        try:
+            data=str(self.conn.recv(1),'utf-8')
+        except socket.error:
+                break
+        while data[-2:]!='\r\n':
             try:
-                data=str(self.conn.recv(1),'utf-8')
-            except socket.error:
-                    break
-            while data[-2:]!='\r\n':
-                try:
-                    data+=str(self.conn.recv(1),'utf-8')
-                except socket.error:
-                    break
-            filename = data[:-2]
-            try:
-                data=str(self.conn.recv(1),'utf-8')
-            except socket.error:
-                    break
-            while data[-2:]!='\r\n':
-                try:
-                    data+=str(self.conn.recv(1),'utf-8')
-                except socket.error:
-                    break
-            filesize = int(data[:-2])
-            file = open(work_directory+filename, 'wb')
-            while filesize>0:
-                if filesize>4096:
-                    try:
-                        data = self.conn.recv(4096)
-                    except socket.error:
-                        break
-                    datasize=len(data)
-                    filesize=filesize-datasize
-                    file.write(data)
-                else:
-                    try:
-                        data = self.conn.recv(filesize)
-                    except socket.error:
-                        break
-                    datasize=len(data)
-                    filesize=filesize-datasize
-                    file.write(data)
-            file.close()
-            try:
-                self.conn.send(bytes('ACK::','utf-8'))
+                data+=str(self.conn.recv(1),'utf-8')
             except socket.error:
                 break
-                self.conn.close()
+        filename = data[:-2]
+        try:
+            data=str(self.conn.recv(1),'utf-8')
+        except socket.error:
+                break
+        while data[-2:]!='\r\n':
+            try:
+                data+=str(self.conn.recv(1),'utf-8')
+            except socket.error:
+                break
+        filesize = int(data[:-2])
+        file = open(work_directory+filename, 'wb')
+        while filesize>0:
+            if filesize>4096:
+                try:
+                    data = self.conn.recv(4096)
+                except socket.error:
+                    break
+                datasize=len(data)
+                filesize=filesize-datasize
+                file.write(data)
+            else:
+                try:
+                    data = self.conn.recv(filesize)
+                except socket.error:
+                    break
+                datasize=len(data)
+                filesize=filesize-datasize
+                file.write(data)
+        file.close()
+        try:
+            self.conn.send(bytes('ACK::','utf-8'))
+        except socket.error:
+            self.conn.close()
+            break
+        self.conn.close()
+
 
 def index_receive(conn):
     global work_directory

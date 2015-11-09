@@ -9,22 +9,22 @@ class file_receive(threading.Thread):
         try:
             data=str(self.conn.recv(1),'utf-8')
         except socket.error:
-                break
+                return
         while data[-2:]!='\r\n':
             try:
                 data+=str(self.conn.recv(1),'utf-8')
             except socket.error:
-                break
+                return
         filename = data[:-2]
         try:
             data=str(self.conn.recv(1),'utf-8')
         except socket.error:
-                break
+                return
         while data[-2:]!='\r\n':
             try:
                 data+=str(self.conn.recv(1),'utf-8')
             except socket.error:
-                break
+                return
         filesize = int(data[:-2])
         file = open(work_directory+filename, 'wb')
         while filesize>0:
@@ -32,7 +32,7 @@ class file_receive(threading.Thread):
                 try:
                     data = self.conn.recv(4096)
                 except socket.error:
-                    break
+                    return
                 datasize=len(data)
                 filesize=filesize-datasize
                 file.write(data)
@@ -40,7 +40,7 @@ class file_receive(threading.Thread):
                 try:
                     data = self.conn.recv(filesize)
                 except socket.error:
-                    break
+                    return
                 datasize=len(data)
                 filesize=filesize-datasize
                 file.write(data)
@@ -49,7 +49,7 @@ class file_receive(threading.Thread):
             self.conn.send(bytes('ACK::','utf-8'))
         except socket.error:
             self.conn.close()
-            break
+            return
         self.conn.close()
 
 

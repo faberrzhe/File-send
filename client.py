@@ -236,7 +236,7 @@ class Client():
             i=0
             for nexthop in nexthop_ip:
                 if os.name=='nt':
-                    route_call=subprocess.call(["route", "add", server_ip_numeric, "mask", "255.255.255.255",nexthop," >>/dev/nul 2>&1l"],shell=True)
+                    route_call=subprocess.call(["route", "add", server_ip_numeric, "mask", "255.255.255.255",nexthop," >>nul"],shell=True)
                     if route_call!=0:
                         print('Could not set routing. Try to run program from privelege user')
                         sys.exit(1)
@@ -281,7 +281,7 @@ class Client():
             i=0
             for nexthop in nexthop_ip:
                 if os.name=='nt':
-                    route_call=subprocess.call(["route", "add", server_ip_numeric, "mask", "255.255.255.255",nexthop," >>/dev/nul 2>&1l"],shell=True)
+                    route_call=subprocess.call(["route", "add", server_ip_numeric, "mask", "255.255.255.255",nexthop,">>nul"],shell=True)
                     if route_call!=0:
                         print('Could not set routing. Try to run program from privelege user')
                         sys.exit(1)

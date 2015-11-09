@@ -161,7 +161,10 @@ class fragment_send(threading.Thread):
             except socket.error:
                 queue_.put(filename)
                 return
-            if receive!='ACK::':
+            if receive=='ACK::':
+                print ('I',end='')
+                sys.stdout.flush()
+            else:
                 queue_.put(filename)
             file.close()
             new_socket.close()
@@ -218,7 +221,7 @@ class Client():
                 line_=route_file.readline()
             route_file.close()
             if os.name=='nt':
-                subprocess.call(["route", "delete", server_ip_numeric,">>nul"],shell=True)
+                subprocess.call(["route", "delete", server_ip_numeric+">>nul","2>&1"],shell=True)
             else:
                 for client in client_ip:
                     try:
@@ -236,7 +239,7 @@ class Client():
             i=0
             for nexthop in nexthop_ip:
                 if os.name=='nt':
-                    route_call=subprocess.call(["route", "add", server_ip_numeric, "mask", "255.255.255.255",nexthop," >>nul"],shell=True)
+                    route_call=subprocess.call(["route", "add", server_ip_numeric, "mask", "255.255.255.255",nexthop+">>nul","2>&1"],shell=True)
                     if route_call!=0:
                         print('Could not set routing. Try to run program from privelege user')
                         sys.exit(1)
@@ -263,7 +266,7 @@ class Client():
                 nexthop_ip.append(line.split(' ')[1])
                 metric_list.append(line.split(' ')[2])
             if os.name=='nt':
-                subprocess.call(["route", "delete", server_ip_numeric,">>nul"],shell=True)
+                subprocess.call(["route", "delete", server_ip_numeric+">>nul  2>&1"],shell=True)
             else:
                 for client in client_ip:
                     try:
@@ -281,7 +284,7 @@ class Client():
             i=0
             for nexthop in nexthop_ip:
                 if os.name=='nt':
-                    route_call=subprocess.call(["route", "add", server_ip_numeric, "mask", "255.255.255.255",nexthop,">>nul"],shell=True)
+                    route_call=subprocess.call(["route", "add", server_ip_numeric, "mask", "255.255.255.255",nexthop+">>nul","2>&1"],shell=True)
                     if route_call!=0:
                         print('Could not set routing. Try to run program from privelege user')
                         sys.exit(1)
@@ -371,7 +374,7 @@ class Client():
                 time.sleep(1)
             self.run()
         elif receive=='DONE::':
-            print('Send sucessful!')
+            print('\r\nSend sucessful!')
             end_time=time.time()
             durance=end_time-start_time
             minutes,seconds=divmod(durance,60)
@@ -396,7 +399,7 @@ class Client():
             main_socket.close()
             server_ip_numeric=socket.gethostbyname(server_ip)
             if os.name=='nt':
-                subprocess.call(["route", "delete", server_ip_numeric,">>nul"],shell=True)
+                subprocess.call(["route", "delete", server_ip_numeric+">>nul","2>&1"],shell=True)
             else:
                 tables=subprocess.check_output(["ip route show table all | grep ^default | grep 566"],shell=True)
                 tables=str(tables,'utf-8')

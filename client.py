@@ -22,13 +22,23 @@ class Init():
             if answer=='Yes' or answer=='':
                 config_file=open(config_file_name,'w+')
                 username=os.getlogin()
+                default_config_string='#Interface options \'single\' for one interface \'auto\' for choosing all interfaces that have default route.  In mode auto weight is equal\r\n'
+                default_config_string+='#If you want to sent manual interface format is \'interface=<interface ip> <nexthop ip> <weight>;<interface ip2> <nexthop ip2> <weight2>\'\r\n'
+                default_config_string+='#auto mode don\'t work properly on linux'
+                default_config_string+='interface=single\r\n'
+                default_config_string+='#Number of sending threads using in single interface connection\r\n'
+                default_config_string+='client_threads=10\r\n'
+                default_config_string+='#Size of one fragment in bytes\r\n'
+                default_config_string+='fragment_size=2000000\r\n'
+                default_config_string+='#Temporary directory to store fragments\r\n'
+                default_config_string+='work_directory='
                 if os.name()=='nt':
-                    default_config='#Interface options \'single\' for one interface \'auto\' for choosing all interfaces that have default route.  In mode auto weight is equal\r\n#If you want to sent manual interface format is \'interface=<interface ip> <nexthop ip> <weight>;<interface ip2> <nexthop ip2> <weight2>\'\r\ninterface=single\r\n#Number of sending threads using in single interface connection\r\nclient_threads=10\r\n#Size of one fragment in bytes\r\nfragment_size=2000000\r\n#Temporary directory to store fragments\r\nwork_directory=C:/Users/'+username+'/python_send/'
+                    default_config_string+='C:/Users/'+username+'/python_send/'
                 elif username=='root':
-                    default_config='#Interface options \'single\' for one interface \'auto\' for choosing all interfaces that have default route.  In mode auto weight is equal\r\n#If you want to sent manual interface format is \'interface=<interface ip> <nexthop ip> <weight>;<interface ip2> <nexthop ip2> <weight2>\'\r\ninterface=single\r\n#Number of sending threads using in single interface connection\r\nclient_threads=10\r\n#Size of one fragment in bytes\r\nfragment_size=2000000\r\n#Temporary directory to store fragments\r\nwork_directory=/root/python_send/'
+                    default_config_string+='/root/python_send/'
                 else:
-                    default_config='#Interface options \'single\' for one interface \'auto\' for choosing all interfaces that have default route.  In mode auto weight is equal\r\n#If you want to sent manual interface format is \'interface=<interface ip> <nexthop ip> <weight>;<interface ip2> <nexthop ip2> <weight2>\'\r\ninterface=single\r\n#Number of sending threads using in single interface connection\r\nclient_threads=10\r\n#Size of one fragment in bytes\r\nfragment_size=2000000\r\n#Temporary directory to store fragments\r\nwork_directory=/home/'+username+'/python_send/'
-                config_file.write(default_config)
+                    default_config_string+='/home/'+username+'/python_send/'
+                config_file.write(default_config_string)
             else:
                 sys.exit(1)
         for line_ in config_file:
@@ -211,9 +221,14 @@ class Client():
             if os.name=='nt':
                 subprocess.call(["route", "delete", server_ip_numeric],shell=True)
             else:
-                route_call=subprocess.call(["route del -host "+server_ip_numeric],shell=True)
-                while route_call==0:
-                    route_call=subprocess.call(["route del -host "+server_ip_numeric],shell=True)
+                for client in client_ip:
+                    subprocess.call(["ip rule del from "+client],shell=True)
+                tables=subprocess.check_output(["ip route show table all | grep ^default | grep 566"],shell=True)
+                tables=str(tables,'utf-8')
+                tables.split('\r\n')
+                for table_line in tables:
+                    subprocess.call(["ip route del "+table_line])
+            i=0
             for nexthop in nexthop_ip:
                 if os.name=='nt':
                     route_call=subprocess.call(["route", "add", server_ip_numeric, "mask", "255.255.255.255",nexthop],shell=True)
@@ -221,7 +236,9 @@ class Client():
                         print('Could not set routing. Try to run program from privelege user')
                         sys.exit(1)
                 else:
-                    route_call=subprocess.call(["route add -host "+server_ip_numeric+" gw "+nexthop],shell=True)
+                    subprocess.call(["ip route add default via "+nexthop+" table 566"+str(i+100)],shell=True)
+                    route_call=subprocess.call(["ip rule add from "+client_ip[i]+" table 566"+str(i+100)],shell=True)
+                    i+=1
                     if route_call!=0:
                         print ('Could not set routing. Try to run program from privelege user')
                         sys.exit(1)
@@ -243,9 +260,14 @@ class Client():
             if os.name=='nt':
                 subprocess.call(["route", "delete", server_ip_numeric],shell=True)
             else:
-                route_call=subprocess.call(["route del -host", server_ip_numeric],shell=True)
-                while route_call==0:
-                    route_call=subprocess.call(["route del -host", server_ip_numeric],shell=True)
+                for client in client_ip:
+                    subprocess.call(["ip rule del from "+client],shell=True)
+                tables=subprocess.check_output(["ip route show table all | grep ^default | grep 566"],shell=True)
+                tables=str(tables,'utf-8')
+                tables.split('\r\n')
+                for table_line in tables:
+                    subprocess.call(["ip route del "+table_line])
+            i=0
             for nexthop in nexthop_ip:
                 if os.name=='nt':
                     route_call=subprocess.call(["route", "add", server_ip_numeric, "mask", "255.255.255.255",nexthop],shell=True)
@@ -253,7 +275,9 @@ class Client():
                         print('Could not set routing. Try to run program from privelege user')
                         sys.exit(1)
                 else:
-                    route_call=subprocess.call(["route add -host "+server_ip_numeric+" gw "+nexthop],shell=True)
+                    subprocess.call(["ip route add default via "+nexthop+" table 566"+str(i+100)],shell=True)
+                    route_call=subprocess.call(["ip rule add from "+client_ip[i]+" table 566"+str(i+100)],shell=True)
+                    i+=1
                     if route_call!=0:
                         print ('Could not set routing. Try to run program from privelege user')
                         sys.exit(1)
@@ -363,9 +387,16 @@ class Client():
             if os.name=='nt':
                 subprocess.call(["route", "delete", server_ip_numeric],shell=True)
             else:
-                route_call=subprocess.call(["route del -host "+ server_ip_numeric],shell=True)
-                while route_call==0:
-                    route_call=subprocess.call(["route del -host "+ server_ip_numeric],shell=True)
+                tables=subprocess.check_output(["ip route show table all | grep ^default | grep 566"],shell=True)
+                tables=str(tables,'utf-8')
+                tables.split('\r\n')
+                for table_line in tables:
+                    subprocess.call(["ip route del "+table_line],shell=True)
+                rules=subprocess.check_output(["ip rule | grep 566 | cut -d ':' -f2 | cut -d ' ' -f1,2 "],shell=True)
+                rules=str(rules,'utf-8')
+                rules=rules.split('\r\n')
+                for rule in rules:
+                    subprocess.call(["ip rule del "+rule],shell=True)
             sys.exit(0)
         else:
             print('GET_FRAGMENTS:: expected, but received'+receive)

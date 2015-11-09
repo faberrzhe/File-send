@@ -46,7 +46,55 @@ class file_receive(threading.Thread):
                     filesize=filesize-datasize
                     file.write(data)
             file.close()
-            return self.conn,filename
+            try:
+                self.conn.send(bytes('ACK::','utf-8'))
+            except socket.error:
+                break
+                self.conn.close()
+
+def index_receive(conn):
+    global work_directory
+    while True:
+        try:
+            data=str(conn.recv(1),'utf-8')
+        except socket.error:
+                break
+        while data[-2:]!='\r\n':
+            try:
+                data+=str(conn.recv(1),'utf-8')
+            except socket.error:
+                break
+        filename = data[:-2]
+        try:
+            data=str(conn.recv(1),'utf-8')
+        except socket.error:
+                break
+        while data[-2:]!='\r\n':
+            try:
+                data+=str(conn.recv(1),'utf-8')
+            except socket.error:
+                break
+        filesize = int(data[:-2])
+        file = open(work_directory+filename, 'wb')
+        while filesize>0:
+            if filesize>4096:
+                try:
+                    data = conn.recv(4096)
+                except socket.error:
+                    break
+                datasize=len(data)
+                filesize=filesize-datasize
+                file.write(data)
+            else:
+                try:
+                    data = conn.recv(filesize)
+                except socket.error:
+                    break
+                datasize=len(data)
+                filesize=filesize-datasize
+                file.write(data)
+        file.close()
+        return conn,filename
 
 def Parse_index(indexfilename):
     global work_directory,fragmentsize,total_fragments
@@ -110,6 +158,12 @@ class server():
         sock=socket.socket()
         sock.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
         sock.setsockopt(socket.SOL_SOCKET,socket.SO_KEEPALIVE,1)
+        if os.name=='nt':
+            pass
+        else:
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 3)
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 3)
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 10)
         sock.bind(('',5666))
         sock.listen(50)
         inputs=[sock]
@@ -127,8 +181,7 @@ class server():
                     except socket.error:
                         break
                 if flag == 'INDEX::':
-                    th=file_receive(conn)
-                    returned_connection,indexfilename=th.run()
+                    returned_connection,indexfilename=index_receive(conn)
                     print('Receiving indexfile: '+indexfilename)
                     need_fragments=Parse_index(indexfilename)
                     if need_fragments=='':
@@ -145,12 +198,8 @@ class server():
 
                 elif flag== 'FRAGMENT::':
                     th=file_receive(conn)
-                    returned_connection,fragment_filename=th.run()
-                    try:
-                        returned_connection.send(bytes('ACK::','utf-8'))
-                    except socket.error:
-                        break
-                    returned_connection.close()
+                    th.start()
+
                 else:
                     print('Error')
                     conn.close()

@@ -239,7 +239,7 @@ class Client():
                     tables=str(tables,'utf-8')
                     tables=tables.split('\r\n')
                     for table_line in tables:
-                        subprocess.call(["ip route del "+table_line+" >>/dev/nul 2>&1l"],shell=True)
+                        subprocess.call(["ip route del "+table_line+" >>/dev/null 2>&1"],shell=True)
                 except:
                     pass
             i=0
@@ -276,7 +276,7 @@ class Client():
             else:
                 for client in client_ip:
                     try:
-                        subprocess.call(["ip rule del from "+client+" >>/dev/nul 2>&1l"],shell=True)
+                        subprocess.call(["ip rule del from "+client+" >>/dev/null 2>&1"],shell=True)
                     except:
                         pass
                 try:
@@ -284,7 +284,7 @@ class Client():
                     tables=str(tables,'utf-8')
                     tables=tables.split('\r\n')
                     for table_line in tables:
-                        subprocess.call(["ip route del "+table_line+" >>/dev/nul 2>&1l"],shell=True)
+                        subprocess.call(["ip route del "+table_line+" >>/dev/null 2>&1"],shell=True)
                 except:
                     pass
             i=0
@@ -295,8 +295,8 @@ class Client():
                         print('Could not set routing. Try to run program from privelege user')
                         sys.exit(1)
                 else:
-                    subprocess.call(["ip route add default via "+nexthop+" table 566"+str(i+100)+" >>/dev/nul 2>&1l"],shell=True)
-                    route_call=subprocess.call(["ip rule add from "+client_ip[i]+" table 566"+str(i+100)+" >>/dev/nul 2>&1l"],shell=True)
+                    subprocess.call(["ip route add default via "+nexthop+" table 566"+str(i+100)+" >>/dev/null 2>&1"],shell=True)
+                    route_call=subprocess.call(["ip rule add from "+client_ip[i]+" table 566"+str(i+100)+" >>/dev/null 2>&1"],shell=True)
                     i+=1
                     if route_call!=0:
                         print ('Could not set routing. Try to run program from privelege user')
@@ -411,12 +411,12 @@ class Client():
                 tables=str(tables,'utf-8')
                 tables=tables.split('\r\n')
                 for table_line in tables:
-                    subprocess.call(["ip route del "+table_line+" >>/dev/nul 2>&1l"],shell=True)
+                    subprocess.call(["ip route del "+table_line[:-1]+" >>/dev/null 2>&1"],shell=True)
                 rules=subprocess.check_output(["ip rule | grep 566 | cut -d \':\' -f2 | cut -d \' \' -f1,2 "],shell=True)
                 rules=str(rules,'utf-8')
                 rules=rules.split('\r\n')
                 for rule in rules:
-                    subprocess.call(["ip rule del "+rule+" >>/dev/nul 2>&1l"],shell=True)
+                    subprocess.call(["ip rule del "+rule[:-1]+" >>/dev/null 2>&1"],shell=True)
             sys.exit(0)
         else:
             print('GET_FRAGMENTS:: expected, but received'+receive)

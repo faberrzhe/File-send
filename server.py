@@ -9,6 +9,9 @@ class file_receive(threading.Thread):
         global work_directory
         try:
             data=str(self.conn.recv(1),'utf-8')
+            if not data:
+                        file.close()
+                        return
         except socket.error:
                 return
         while data[-2:]!='\r\n':
@@ -19,20 +22,32 @@ class file_receive(threading.Thread):
         filename = data[:-2]
         try:
             data=str(self.conn.recv(1),'utf-8')
+            if not data:
+                file.close()
+                return
         except socket.error:
                 return
+        filesize_data=data
         while data[-2:]!='\r\n':
             try:
-                data+=str(self.conn.recv(1),'utf-8')
+                data=str(self.conn.recv(1),'utf-8')
+                if not data:
+                    file.close()
+                    return
+                filesize_data+=data
             except socket.error:
                 return
-        filesize = int(data[:-2])
+        filesize = int(filesize_data[:-2])
         file = open(work_directory+filename, 'wb')
         while filesize>0:
             if filesize>4096:
                 try:
                     data = self.conn.recv(4096)
+                    if not data:
+                        file.close()
+                        return
                 except socket.error:
+                    file.close()
                     return
                 datasize=len(data)
                 filesize=filesize-datasize
@@ -40,7 +55,11 @@ class file_receive(threading.Thread):
             else:
                 try:
                     data = self.conn.recv(filesize)
+                    if not data:
+                        file.close()
+                        return
                 except socket.error:
+                    file.close()
                     return
                 datasize=len(data)
                 filesize=filesize-datasize
@@ -56,47 +75,65 @@ class file_receive(threading.Thread):
 
 def index_receive(conn):
     global work_directory
-    while True:
+    try:
+        data=str(conn.recv(1),'utf-8')
+        if not data:
+            file.close()
+            return
+    except socket.error:
+            return
+    while data[-2:]!='\r\n':
         try:
-            data=str(conn.recv(1),'utf-8')
+            data+=str(conn.recv(1),'utf-8')
         except socket.error:
-                break
-        while data[-2:]!='\r\n':
-            try:
-                data+=str(conn.recv(1),'utf-8')
-            except socket.error:
-                break
-        filename = data[:-2]
+            return
+    filename = data[:-2]
+    try:
+        data=str(conn.recv(1),'utf-8')
+        if not data:
+            file.close()
+            return
+    except socket.error:
+        return
+    filesize_data=data
+    while data[-2:]!='\r\n':
         try:
-            data=str(conn.recv(1),'utf-8')
+            data=str(self.conn.recv(1),'utf-8')
+            if not data:
+                file.close()
+                return
+            filesize_data+=data
         except socket.error:
-                break
-        while data[-2:]!='\r\n':
+            return
+    filesize = int(filesize_data[:-2])
+    file = open(work_directory+filename, 'wb')
+    while filesize>0:
+        if filesize>4096:
             try:
-                data+=str(conn.recv(1),'utf-8')
+                data = conn.recv(4096)
+                if not data:
+                    file.close()
+                    return
             except socket.error:
-                break
-        filesize = int(data[:-2])
-        file = open(work_directory+filename, 'wb')
-        while filesize>0:
-            if filesize>4096:
-                try:
-                    data = conn.recv(4096)
-                except socket.error:
-                    break
-                datasize=len(data)
-                filesize=filesize-datasize
-                file.write(data)
-            else:
-                try:
-                    data = conn.recv(filesize)
-                except socket.error:
-                    break
-                datasize=len(data)
-                filesize=filesize-datasize
-                file.write(data)
-        file.close()
-        return conn,filename
+                file.close()
+                return
+            datasize=len(data)
+            filesize=filesize-datasize
+            file.write(data)
+        else:
+            try:
+                data = conn.recv(filesize)
+                if not data:
+                    file.close()
+                    return
+            except socket.error:
+                file.close()
+                return
+            datasize=len(data)
+            filesize=filesize-datasize
+            file.write(data)
+    file.close()
+    return conn,filename
 
 def Parse_index(indexfilename):
     global work_directory,fragmentsize,total_fragments
@@ -183,7 +220,12 @@ class server():
                     except socket.error:
                         break
                 if flag == 'INDEX::':
-                    returned_connection,indexfilename=index_receive(conn)
+                    try:
+                        returned_connection,indexfilename=index_receive(conn)
+                    except:
+                        print ('Index receiving failed')
+                        conn.close()
+                        break
                     print('Receiving indexfile: '+indexfilename)
                     need_fragments=Parse_index(indexfilename)
                     if need_fragments=='':

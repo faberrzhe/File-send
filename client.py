@@ -405,18 +405,24 @@ class Client():
             main_socket.close()
             server_ip_numeric=socket.gethostbyname(server_ip)
             if os.name=='nt':
-                subprocess.call(["route", "delete", server_ip_numeric+">>nul","2>&1"],shell=True)
+                try:
+                    subprocess.call(["route", "delete", server_ip_numeric+">>nul","2>&1"],shell=True)
+                except:
+                    pass
             else:
-                tables=subprocess.check_output(["ip route show table all | grep ^default | grep 566"],shell=True)
-                tables=str(tables,'utf-8')
-                tables=tables.split('\r\n')
-                for table_line in tables:
-                    subprocess.call(["ip route del "+table_line[:-1]+" >>/dev/null 2>&1"],shell=True)
-                rules=subprocess.check_output(["ip rule | grep 566 | cut -d \':\' -f2 | cut -d \' \' -f1,2 "],shell=True)
-                rules=str(rules,'utf-8')
-                rules=rules.split('\r\n')
-                for rule in rules:
-                    subprocess.call(["ip rule del "+rule[:-1]+" >>/dev/null 2>&1"],shell=True)
+                try:
+                    tables=subprocess.check_output(["ip route show table all | grep ^default | grep 566"],shell=True)
+                    tables=str(tables,'utf-8')
+                    tables=tables.split('\r\n')
+                    for table_line in tables:
+                        subprocess.call(["ip route del "+table_line[:-1]+" >>/dev/null 2>&1"],shell=True)
+                    rules=subprocess.check_output(["ip rule | grep 566 | cut -d \':\' -f2 | cut -d \' \' -f1,2 "],shell=True)
+                    rules=str(rules,'utf-8')
+                    rules=rules.split('\r\n')
+                    for rule in rules:
+                        subprocess.call(["ip rule del "+rule[:-1]+" >>/dev/null 2>&1"],shell=True)
+                except:
+                    pass
             sys.exit(0)
         else:
             print('GET_FRAGMENTS:: expected, but received'+receive)

@@ -5,7 +5,6 @@ class file_receive(threading.Thread):
         threading.Thread.__init__(self)
         self.conn=conn
     def run(self):
-        print(str(threading.active_count()))
         global work_directory
         try:
             data=str(self.conn.recv(1),'utf-8')

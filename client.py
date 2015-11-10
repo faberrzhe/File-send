@@ -250,8 +250,8 @@ class Client():
                         print('Could not set routing. Try to run program from privelege user')
                         sys.exit(1)
                 else:
-                    subprocess.call(["ip route add default via "+nexthop+" table 566"+str(i+100)+" >>/dev/null 2>&1"],shell=True)
-                    rull_call=subprocess.call(["ip rule add from "+client_ip[i]+" table 566"+str(i+100)+" >>/dev/null 2>&1"],shell=True)
+                    subprocess.call(["ip route add default via "+nexthop+" table 566"+str(i+100)+">>/dev/null 2>&1"],shell=True)
+                    rull_call=subprocess.call(["ip rule add from "+client_ip[i]+" table 566"+str(i+100)+">>/dev/null 2>&1"],shell=True)
                     i+=1
                     if rull_call!=0:
                         print ('Could not set routing. Try to run program from privelege user')

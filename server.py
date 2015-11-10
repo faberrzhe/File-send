@@ -10,7 +10,6 @@ class file_receive(threading.Thread):
         try:
             data=str(self.conn.recv(1),'utf-8')
             if not data:
-                        file.close()
                         return
         except socket.error:
                 return
@@ -23,16 +22,14 @@ class file_receive(threading.Thread):
         try:
             data=str(self.conn.recv(1),'utf-8')
             if not data:
-                file.close()
                 return
         except socket.error:
                 return
         filesize_data=data
-        while data[-2:]!='\r\n':
+        while filesize_data[-2:]!='\r\n':
             try:
                 data=str(self.conn.recv(1),'utf-8')
                 if not data:
-                    file.close()
                     return
                 filesize_data+=data
             except socket.error:
@@ -78,7 +75,6 @@ def index_receive(conn):
     try:
         data=str(conn.recv(1),'utf-8')
         if not data:
-            file.close()
             return
     except socket.error:
             return
@@ -91,16 +87,14 @@ def index_receive(conn):
     try:
         data=str(conn.recv(1),'utf-8')
         if not data:
-            file.close()
             return
     except socket.error:
         return
     filesize_data=data
-    while data[-2:]!='\r\n':
+    while filesize_data[-2:]!='\r\n':
         try:
-            data=str(self.conn.recv(1),'utf-8')
+            data=str(conn.recv(1),'utf-8')
             if not data:
-                file.close()
                 return
             filesize_data+=data
         except socket.error:

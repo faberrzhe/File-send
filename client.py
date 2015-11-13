@@ -389,7 +389,7 @@ class Client():                                                              #be
                 fragment_name=work_directory+short_send_filename+'/'+short_send_filename+'_part'+str(i)
                 queue_.put(fragment_name)
             self.load_balance()
-            while threading.active_count()>4:                                                                           #dont know why there are 4 working threads.
+            while threading.active_count()>1:
                 time.sleep(1)
             self.run()                                                                                                  #when finish send index again for check
         elif receive=='DONE::':                                                                                         #server say thats all

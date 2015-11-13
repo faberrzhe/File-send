@@ -1,24 +1,12 @@
-# File-transfer-server
-"""
-TODO:
-1. Describe protocol
-2. Write about
-
-"""
-"""
-Protocol:
-All messages begins with uppercase flag, ending with ::
-Flags:
-
-INDEX::"Client send indexfile, contains filename, client ident, part number,size,and checksum"
-Structure:"INDEX::size(bytes)::indexfile"
-
-GET_FRAGMENT::"Server send to client fragmet didn't yet received"
-Structure:"GET_FRAGMENT::ident(10digits)::fragment_id(int),fragment_id(int),..."
-
-FRAGMENT::"Send fragment to server"
-Structure:"FRAGMENT::filename(str)::fragment_id(int)::fragment_file"
-
-DONE::"Send acknowlage to client all fragments received"
-Structure:"DONE::filename"
-"""
+This is program for sending files over the network.
+Can send files over several interfaces. It can continue sending after network fails or interrupt.
+At first it cut file to parts and then send it server. After that server solve parts together
+Can run both on Windows and Linux
+Works on port 5666
+Requires python 3, and iproute2 for Linux
+Usage:
+Server: ~PROGRAMDIR/server.py
+Client: ~PROGRAMDIR/client.py <server fqdn or ip> <sending file>
+More options for client available in ~PROGRAMDIR/config.txt
+If You want to use several interfaces use option "auto" for interface parameter or set ip, nexthop and weight manualy
+Directory for receiving file is C:/python_receive on Windows and ~/python_receive on Linux

@@ -188,14 +188,8 @@ class server():
                         print('Could not create work directory' +work_directory)
                         sys.exit(1)
         sock=socket.socket()
-        sock.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-        sock.setsockopt(socket.SOL_SOCKET,socket.SO_KEEPALIVE,1)
-        if os.name=='nt':
-            pass
-        else:
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 3)
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 3)
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 10)
+        #sock.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+        #sock.setsockopt(socket.SOL_SOCKET,socket.SO_KEEPALIVE,1)
         sock.bind(('',5666))
         sock.listen(50)
         inputs=[sock]

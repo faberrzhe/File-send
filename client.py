@@ -130,8 +130,8 @@ class fragment_send(threading.Thread):
                 return
             try:
                 new_socket=socket.create_connection((server_ip,5666),60,(self.interface,0))
-                new_socket.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-                new_socket.setsockopt(socket.SOL_SOCKET,socket.SO_KEEPALIVE,1)
+                #new_socket.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+                #new_socket.setsockopt(socket.SOL_SOCKET,socket.SO_KEEPALIVE,1)
 
             except socket.error:
                 queue_.put(filename)
@@ -354,8 +354,8 @@ class Client():
         global server_ip, work_directory, short_send_filename,queue_,client_threads,start_time,start_file_size
         queue_=queue.Queue()
         main_socket=socket.socket()
-        main_socket.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-        main_socket.setsockopt(socket.SOL_SOCKET,socket.SO_KEEPALIVE,1)
+        #main_socket.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+        #main_socket.setsockopt(socket.SOL_SOCKET,socket.SO_KEEPALIVE,1)
         self.index_sent(main_socket)
         try:
             receive=str(main_socket.recv(1),'utf-8')
